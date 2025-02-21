@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
+const captchaUrl = 'https://www.google.com/recaptcha/api/siteverify?';
 const app = express();
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 app.use(cookieParser());
+
 function authToken(req, res, next){
   const authHeader = req.get('Authorization');
   const token = authHeader && authHeader.split(' ')[1];
@@ -35,7 +37,7 @@ app.get('/api/users', async (req, res) => {
   res.status(200).json(users);
 });
 
-app.get('/api/users/:id', async (req, res) => {
+app.get('/api/users/:id', authToken, async (req, res) => {
   const user = await userdb.getUserById(req.params.id);
   res.status(200).json({
     status: 200,
@@ -47,7 +49,7 @@ app.get('/api/users/:id', async (req, res) => {
   });
 });
 
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', authToken, async (req, res) => {
   const {username, password, age, gender} = req.body;
   const user = await userdb.getUserById(req.params.id);
   if(user.password == password.currentPassword){
@@ -84,77 +86,95 @@ app.put('/api/users/:id', async (req, res) => {
     })
   }
 });
-
-app.delete('/api/users/:id', authToken, async (req, res) => {
-  await userdb.deleteUser(req.params.id);
-  res.status(201).json({success: true});
+//////// DELETE USER /////////////
+app.post('/api/users/:id/delete', authToken, async (req, res) => {
+  const user = await userdb.getUserById(req.params.id);
+  const {password} = req.body;
+  if(user.password == password){
+    await userdb.deleteUser(req.params.id);
+    res.status(201).json({success: true});
+  }else {
+    res.status(401).json({message: 'wrong password'});
+  }
 });
 
 /////////// SIGN IN ///////////
 app.post('/api/users/signin', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, recaptcha } = req.body;
   const user = await userdb.getUserByUsername(username);
-  if(!user){
-    res.status(401).send('user not found');
-  } else if(user.password == password){
-    let token = jwt.sign(
-    {
-      userId: user.id,
-      username: user.username
-    },
-    process.env.token,
-    {expiresIn: '1h'}
-    );
-    res.status(200).json({
-      status: 200,
-      data: {
-        username: user.username,
-        age: user.age,
-        gender: user.gender,
-        token: token
-      }
-    });
-  } else if(user.password !== password){
-    res.status(403).json({
-      status: 403,
-      message: 'wrong password'
-    })
+  const captcha = await fetch(captchaUrl + `secret=${process.env.captchaSecretKey}&response=${recaptcha}`, {
+    method: "POST"
+  }).then(res => res.json());
+  if(captcha.success === true){
+    if(!user){
+      res.status(401).send('user not found');
+    } 
+    else if(user.password == password){
+      let token = jwt.sign(
+      {
+        userId: user.id,
+        username: user.username
+      },
+      process.env.token,
+      {expiresIn: '1h'}
+      );
+      res.status(200).json({
+        status: 200,
+        data: {
+          username: user.username,
+          age: user.age,
+          gender: user.gender,
+          token: token
+        }
+      });
+    } 
+    else if(user.password !== password){
+      res.status(403).json({
+        status: 403,
+        message: 'wrong password'
+      })
+    }
   }
 });
 ////////////// REGISTER ///////////////
 app.post('/api/users/register', async (req, res) => {
-  const { username, password, age, gender } = req.body;
+  const { username, password, age, gender, recaptcha } = req.body;
   const userExist = await userdb.getUserByUsername(username);
-  if(userExist){
-    res.status(403).send('User already exists');
-  }else {
-    const newUser = {
-      username: username,
-      password: password.newPassword,
-      age: age,
-      gender: gender,
-    };
-    await userdb.createUser(newUser);
-    let addedUser = await userdb.getUserByUsername(newUser.username);
-    let token = jwt.sign(
-      {
-        userId: addedUser.id,
-        username: addedUser.username
-      },
-      process.env.token,
-      {expiresIn: '1h'}
-    );
-    res.status(201).json({
-      "status": 201,
-      data: {
-        username: addedUser.username,
-        age: addedUser.age,
-        gender: addedUser.gender,
-        token: token
-      }
-    });
+  const captcha = await fetch(captchaUrl + `secret=${process.env.captchaSecretKey}&response=${recaptcha}`, {
+    method: "POST"
+  }).then(res => res.json());
+  
+  if(captcha.success === true){
+    if(userExist){
+      res.status(403).send('User already exists');
+    }else {
+      const newUser = {
+        username: username,
+        password: password.newPassword,
+        age: age,
+        gender: gender,
+      };
+      await userdb.createUser(newUser);
+      let addedUser = await userdb.getUserByUsername(newUser.username);
+      let token = jwt.sign(
+        {
+          userId: addedUser.id,
+          username: addedUser.username
+        },
+        process.env.token,
+        {expiresIn: '1h'}
+      );
+      res.status(201).json({
+        "status": 201,
+        data: {
+          username: addedUser.username,
+          age: addedUser.age,
+          gender: addedUser.gender,
+          token: token
+        }
+      });
+    }
   }
-
 });
 /////////// PRODUCTS //////////
 app.get('/api/products', async (req, res) => {
