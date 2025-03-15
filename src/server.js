@@ -195,27 +195,61 @@ app.get('/api/products/:id', async (req, res) => {
 });
 
 ///////////// CART ///////////////
-app.get('/api/cart/:id', async (req, res) => {
-  const userCart = await cartdb.getCart(req.params.id);
-  if(userCart.length !== 0){
-    res.status(200).json(userCart);
+app.get('/api/cart/:userid', async (req, res) => {
+  const userCart = await cartdb.getCart(req.params.userid);
+  if(userCart && userCart.length !== 0){
+    res.status(200).json({
+      purchased: userCart.purchased, 
+      order: userCart.order
+    });
   } else {
     res.status(404).send({message: 'Not Found!'})
   }
 });
 
-app.post('/api/cart', async (req, res) => {
-  const cart = await cartdb.addToCart(req.body);
-  res.status(201).json({id: cart[0]})
+app.post('/api/cart/:userid', async (req, res) => {
+  const { productId, name, quantity, price } = req.body;
+  const userId = req.params.userid;
+  const cart = await cartdb.getCart(userId);
+  try {
+    if(cart){
+      const orderArr = JSON.parse(cart.order);
+      const order = { productId, quantity, name, price };
+      let itemIndex = orderArr.findIndex(p => p.productId == productId);
+      if(itemIndex > -1){
+        let productItem = orderArr[itemIndex];
+        productItem.quantity = quantity;
+        orderArr[itemIndex] = productItem;
+      } else {
+        orderArr.push(order);
+      }
+      await cartdb.updateCart(userId, JSON.stringify(orderArr));
+      res.status(201).json(cart);
+    } 
+    else{
+      const orderArr = [];
+      const order = {productId, name, price, quantity};
+      orderArr.push(order);
+      await cartdb.addToCart(userId, JSON.stringify(orderArr));
+      res.status(201).json(cart);
+    }
+  } catch(err) {
+    console.log(err);
+    res.send(500).send('something went wrong');
+  }
 });
 
-app.put('/api/cart/:id', async (req, res) => {
-  const cart = await cartdb.updateCart(req.params.id, req.body);
-  res.status(201).json(cart);
+app.post('/api/cart/purchase/:userid', async (req, res) => {
+  const { purchased } = req.body;
+  const cart = await cartdb.getCart(req.params.userid);
+  if(cart.purchased == 0 && purchased == 1){
+    await cartdb.purchaseCart(req.params.userid);
+    res.status(201).json({message: 'purchased successfully'})
+  };
 });
 
-app.delete('/api/cart/:id', async (req, res) => {
-  const cart = await cartdb.deleteCart(req.params.id);
+app.delete('/api/cart/:userid', async (req, res) => {
+  await cartdb.deleteCart(req.params.id);
   res.status(202).send({message: 'Deleted'});
 });
 // app.get('/users', (req, res) => {
