@@ -203,7 +203,7 @@ app.get('/api/cart/:userid', async (req, res) => {
       order: userCart.order
     });
   } else {
-    res.status(404).send({message: 'Not Found!'})
+    res.status(200).send({message: 'you have no cart'})
   }
 });
 
@@ -216,11 +216,7 @@ app.post('/api/cart/:userid', async (req, res) => {
       const orderArr = JSON.parse(cart.order);
       const order = { productId, quantity, name, price };
       let itemIndex = orderArr.findIndex(p => p.productId == productId);
-      if(itemIndex > -1){
-        let productItem = orderArr[itemIndex];
-        productItem.quantity = quantity;
-        orderArr[itemIndex] = productItem;
-      } else {
+      if(itemIndex < 0){
         orderArr.push(order);
       }
       await cartdb.updateCart(userId, JSON.stringify(orderArr));
@@ -236,6 +232,46 @@ app.post('/api/cart/:userid', async (req, res) => {
   } catch(err) {
     console.log(err);
     res.send(500).send('something went wrong');
+  }
+});
+
+app.patch('/api/cart/:userid/:productid/increase', async (req, res) => {
+  const { quantity } = req.body;
+  const userId = req.params.userid;
+  const productId = req.params.productid;
+  const cart = await cartdb.getCart(userId);
+  const order = JSON.parse(cart.order);
+  const indexOfProduct = order.findIndex(p => p.productId == productId);
+  let productObj = order[indexOfProduct];
+  let currentQuantity = productObj.quantity;
+  productObj.quantity = currentQuantity + quantity;
+  await cartdb.updateCart(userId, JSON.stringify(order));
+  res.json(order)
+});
+
+app.patch('/api/cart/:userid/:productid/decrease', async (req, res) => {
+  const { quantity } = req.body;
+  const userId = req.params.userid;
+  const productId = req.params.productid;
+  const cart = await cartdb.getCart(userId);
+  const order = JSON.parse(cart.order);
+  const indexOfProduct = order.findIndex(p => p.productId == productId);
+  if(order.length){
+    if(indexOfProduct > -1){
+      let productObj = order[indexOfProduct];
+      let currentQuantity = productObj.quantity;
+      if(currentQuantity > 1){
+        productObj.quantity = currentQuantity - quantity;
+        await cartdb.updateCart(userId, JSON.stringify(order));
+      }
+      if(currentQuantity == 1){
+        order.splice(indexOfProduct, 1)
+        await cartdb.updateCart(userId, JSON.stringify(order));
+      }
+      res.json(order); 
+    }
+  } else {
+    res.json(order);
   }
 });
 
