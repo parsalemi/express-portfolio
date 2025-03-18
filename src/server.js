@@ -6,15 +6,22 @@ import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import cors from 'cors';
 
 const captchaUrl = 'https://www.google.com/recaptcha/api/siteverify?';
 const app = express();
 dotenv.config();
+const corsOptions = {
+  origin: 'http://localhost:4200',
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+  credential: true,
+}
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 app.use(cookieParser());
+app.use(cors(corsOptions));
 
 function authToken(req, res, next){
   const authHeader = req.get('Authorization');
