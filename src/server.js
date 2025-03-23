@@ -226,6 +226,10 @@ app.post('/api/cart/:userid', async (req, res) => {
       if(itemIndex < 0){
         orderArr.push(order);
       }
+      else {
+        let product = orderArr[itemIndex];
+        product.quantity = product.quantity + 1;
+      }
       await cartdb.updateCart(userId, JSON.stringify(orderArr));
       res.status(201).json(cart);
     } 
