@@ -282,6 +282,18 @@ app.patch('/api/cart/:userid/:productid/decrease', async (req, res) => {
   }
 });
 
+app.patch('/api/cart/:userid/delete/:productid', async (req, res) => {
+  const userId = req.params.userid;
+  const {productId} = req.body;
+  const cart = await cartdb.getCart(userId);
+  let order = JSON.parse(cart.order);
+  const indexOfProduct = order.findIndex(p => p.productId == productId);
+  console.log(indexOfProduct, productId);
+  order.splice(indexOfProduct, 1);
+  await cartdb.updateCart(userId, JSON.stringify(order));
+  res.status(202).json({message: 'product deleted'});
+});
+
 app.post('/api/cart/purchase/:userid', async (req, res) => {
   const { purchased } = req.body;
   const cart = await cartdb.getCart(req.params.userid);
