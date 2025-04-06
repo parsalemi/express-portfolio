@@ -345,59 +345,5 @@ app.delete('/api/cart/:userid', async (req, res) => {
   await cartdb.deleteCart(req.params.id);
   res.status(202).send({message: 'Deleted'});
 });
-// app.get('/users', (req, res) => {
-//   const {search} = req.query;
-//   const matches = users.filter(user => user.username.includes(search));
-//   if(matches){
-//     res.json(matches);
-//   }else{
-//     res.json(users);
-//   }
-// });
 
-// app.get('/users/:userId', (req, res) => {
-//   let {userId} = req.params;
-//   let user = users.find(user => user.id == userId);
-  
-//   if(user){
-//     res.json(user);
-//   } else {
-//     res.sendStatus(404);
-//   }
-// });
-
-// app.post('/users', (req, res) => {
-//   let {username, password} = req.body;
-//   let newUser = {
-//     id: uuid(),
-//     username,
-//     password,
-//   };
-//   users.push(newUser);
-//   res.status(201).json(users);
-// });
-
-// app.delete('/users/:userId', (req, res) => {
-//   let {userId} = req.params;
-//   let userIndex = users.findIndex(user => user.id === userId);
-//   if(userIndex > -1){
-//     users.splice(userIndex, 1);
-//   }
-//   res.json(users);
-// });
-
-// app.put('/users/:userId', (req, res) => {
-//   let {userId} = req.params;
-//   let {username, age} = req.body;
-
-//   let user = users.find(user => user.id === userId);
-
-//   if(user){
-//     user.username = username;
-//     user.age = age;
-//     res.json(users);
-//   } else {
-//     res.sendStatus(404);
-//   }
-// });
 app.listen(8000, () => console.log('server is runnig 8000'))
