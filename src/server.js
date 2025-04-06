@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import axios from 'axios';
 
 const captchaUrl = 'https://www.google.com/recaptcha/api/siteverify?';
 const app = express();
@@ -186,13 +187,47 @@ app.post('/api/users/register', async (req, res) => {
 /////////// PRODUCTS //////////
 app.get('/api/products', async (req, res) => {
   res.set('Access-Control-Allow-Origin', 'http://localhost:8000/api/products');
+  const limit = req.query.limit;
+  const page = req.query.page;
+  const offset = (page - 1 ) * limit;
   const price = req.query.price;
+  const category = req.query.category;
+
   if(price){
     const products = await productdb.getProductByPrice(price);
-    res.status(200).json(products)
-  } else{
-    const products = await productdb.getAllProducts();
-    res.status(200).json(products);
+    const parsedProducts = products.map(product => ({
+      ...product,
+      tags: JSON.parse(product.tags),
+      reviews: JSON.parse(product.reviews),
+    }));
+    res.status(200).json({
+      products: parsedProducts,
+      total_products: parsedProducts.length,
+    });
+  } 
+  else if(category){
+    const products = await productdb.getProductsByCategory(category);
+    const parsedProducts = products.map(product => ({
+      ...product,
+      tags: JSON.parse(product.tags),
+      reviews: JSON.parse(product.reviews),
+    }));
+    res.status(200).json({
+      products: parsedProducts,
+      total_products: parsedProducts.length
+    });
+  }
+  else{
+    const products = await productdb.getAllProducts(limit, offset);
+    const parsedProducts = products.map(product => ({
+      ...product,
+      tags: JSON.parse(product.tags),
+      reviews: JSON.parse(product.reviews),
+    }))
+    res.status(200).json({
+      products: parsedProducts,
+      total_products: parsedProducts.length,
+    });
   }
 });
 
@@ -215,13 +250,13 @@ app.get('/api/cart/:userid', async (req, res) => {
 });
 
 app.post('/api/cart/:userid', async (req, res) => {
-  const { productId, name, quantity, price } = req.body;
+  const { productId, name, quantity, price, code, weight } = req.body;
   const userId = req.params.userid;
   const cart = await cartdb.getCart(userId);
   try {
     if(cart){
       const orderArr = JSON.parse(cart.order);
-      const order = { productId, quantity, name, price };
+      const order = { productId, quantity, name, price, code, weight };
       let itemIndex = orderArr.findIndex(p => p.productId == productId);
       if(itemIndex < 0){
         orderArr.push(order);
@@ -235,7 +270,7 @@ app.post('/api/cart/:userid', async (req, res) => {
     } 
     else{
       const orderArr = [];
-      const order = {productId, name, price, quantity};
+      const order = {productId, name, price, quantity, code, weight};
       orderArr.push(order);
       await cartdb.addToCart(userId, JSON.stringify(orderArr));
       res.status(201).json(cart);
@@ -292,7 +327,6 @@ app.patch('/api/cart/:userid/delete/:productid', async (req, res) => {
   const cart = await cartdb.getCart(userId);
   let order = JSON.parse(cart.order);
   const indexOfProduct = order.findIndex(p => p.productId == productId);
-  console.log(indexOfProduct, productId);
   order.splice(indexOfProduct, 1);
   await cartdb.updateCart(userId, JSON.stringify(order));
   res.status(202).json({message: 'product deleted'});
