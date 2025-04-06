@@ -242,7 +242,7 @@ app.get('/api/cart/:userid', async (req, res) => {
   if(userCart && userCart.length !== 0){
     res.status(200).json({
       purchased: userCart.purchased, 
-      order: userCart.order
+      order: JSON.parse(userCart.order),
     });
   } else {
     res.status(200).send({message: 'you have no cart'})
