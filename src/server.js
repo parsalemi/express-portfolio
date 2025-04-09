@@ -346,4 +346,13 @@ app.delete('/api/cart/:userid', async (req, res) => {
   res.status(202).send({message: 'Deleted'});
 });
 
+app.get('/api/:userid/order-history', async (req, res) => {
+  const orders = await cartdb.getOrderHistory(req.params.userid);
+  const parsedOrders = orders.map( order => ({
+    ...order,
+    order: JSON.parse(order.order)
+  }))
+  res.status(200).json(parsedOrders)
+});
+
 app.listen(8000, () => console.log('server is runnig 8000'))
