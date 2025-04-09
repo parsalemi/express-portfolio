@@ -30,7 +30,7 @@ function updateCart(userId, order){
 }
 
 function getOrderHistory(userId){
-  return knex('carts').where('userid', userId).where('purchased', 1).select('id', 'order');
+  return knex('carts').where('userid', userId).where('purchased', 1).select('id', 'order', 'date');
 }
 
 export default {
