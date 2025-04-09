@@ -14,7 +14,7 @@ function addToCart(userId, order){
 }
 
 function purchaseCart(userId){
-  return knex('carts').where('userid', userId).update({
+  return knex('carts').where('userid', userId).where('purchased', 0).update({
     'purchased': 1,
     'userid': userId,
     'date': new Date().toLocaleString()
