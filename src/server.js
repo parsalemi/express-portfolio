@@ -11,9 +11,10 @@ import axios from 'axios';
 
 const captchaUrl = 'https://www.google.com/recaptcha/api/siteverify?';
 const app = express();
-dotenv.config();
+dotenv.config({path: `.env.${process.env.NODE_ENV}`});
 const corsOptions = {
-  origin: 'http://localhost:4200',
+  // origin: 'http://localhost:4200',
+  origin: process.env.CORS_ORIGIN,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
   credential: true,
 }
@@ -39,6 +40,13 @@ function authToken(req, res, next){
     next();
   })
 }
+
+app.get('/api', (req, res) => {
+  res.json({
+    status: 'running',
+    environment: process.env.NODE_ENV,
+  })
+});
 ////////// USERS /////////////
 app.get('/api/users', async (req, res) => {
   const users = await userdb.getAllUsers();
@@ -355,4 +363,4 @@ app.get('/api/:userid/order-history', async (req, res) => {
   res.status(200).json(parsedOrders)
 });
 
-app.listen(8000, () => console.log('server is runnig 8000'))
+app.listen(process.env.PORT, () => console.log(`server is in port ${process.env.PORT} and in ${process.env.NODE_ENV} mode`))
