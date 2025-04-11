@@ -194,7 +194,7 @@ app.post('/api/users/register', async (req, res) => {
 });
 /////////// PRODUCTS //////////
 app.get('/api/products', async (req, res) => {
-  res.set('Access-Control-Allow-Origin', 'http://localhost:8000/api/products');
+  res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
   const limit = req.query.limit;
   const page = req.query.page;
   const offset = (page - 1 ) * limit;
