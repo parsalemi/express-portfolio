@@ -3,7 +3,9 @@ import knex from 'knex';
 const connectedKnex = knex({
   client: "sqlite3",
   connection: {
-    filename: "./src/db.sqlite3"
+    filename: process.env.NODE_ENV === 'production'
+    ? "/tmp/db.sqlite3"
+    : "./src/db.sqlite3"
   }
 });
 
