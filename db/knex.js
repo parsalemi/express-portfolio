@@ -1,30 +1,14 @@
 import knex from 'knex';
-import fetch from 'cross-fetch';
+import CloudflareD1Dialect from 'cloudflare-d1-http-knex';
 
 const d1Config = {
-  client: 'sqlite3',
+  client: CloudflareD1Dialect,
   connection: {
-    filename: ':memory:',
-    async query({sql, bindings}){
-      const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_Account_ID}/d1/database/${process.env.CF_DB_ID}/query`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.CF_API_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            sql,
-            params: bindings
-          })
-        }
-      );
-      const data = await response.json();
-      return data.result;
-    }
+    account_id: process.env.CF_ACCOUNT_ID,
+    database_id: process.env.CF_DB_ID,
+    key: process.env.CF_API_TOKEN,
   },
-  useNullAsDefault: true
+  useNullAsDefault: true,
 }
 
 const localConfig = {
