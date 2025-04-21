@@ -11,7 +11,6 @@ const d1Config = {
   useNullAsDefault: true,
 }
 
-console.log(d1Config.connection);
 const localConfig = {
   client: 'sqlite3',
   connection: {
