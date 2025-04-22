@@ -7,7 +7,6 @@ import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import axios from 'axios';
 
 const captchaUrl = 'https://www.google.com/recaptcha/api/siteverify?';
 const app = express();
@@ -15,7 +14,7 @@ dotenv.config({path: `.env.${process.env.NODE_ENV}`});
 const corsOptions = {
   origin: process.env.CORS_ORIGIN,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-  credential: true,
+  credentials: true,
 }
 
 app.use(express.json());
@@ -193,7 +192,6 @@ app.post('/api/users/register', async (req, res) => {
 });
 /////////// PRODUCTS //////////
 app.get('/api/products', async (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
   const limit = req.query.limit;
   const page = req.query.page;
   const offset = (page - 1 ) * limit;
